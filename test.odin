@@ -38,9 +38,9 @@ assert_string :: proc(l: ^Lexer, s: string) {
 }
 
 
-//LEAKS
+
 test_lex :: proc(l: ^Lexer) {
-  file_bytes, success := os.read_entire_file("./test.stak");
+  file_bytes, success := os.read_entire_file("./test1.stak");
   if !success {
 	  fmt.println("Could not open source file");
 	  os.exit(1);
@@ -48,7 +48,8 @@ test_lex :: proc(l: ^Lexer) {
   // NOTE(josh): a whole copy just to insert a null terminator?  okay . . .
   // maybe we can just write our own read_entire_file function instead.  
   // or even memory mapped file?  That sounds fun
-  source_stream := make([]byte, len(file_bytes) + 1); //LEAK
+  source_stream := make([]byte, len(file_bytes) + 1);
+  defer delete(source_stream);
   copy(source_stream, file_bytes);
   source_stream[len(file_bytes)] = 0;
 

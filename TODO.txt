@@ -1,0 +1,8 @@
+TODO.txt
+
+
+first pass on parser
+[ ] produce a parse tree that can be verified by turning it into an S expression
+    [ ] parse expressions
+    [ ] parse statements
+    [ ] parse function definitions
