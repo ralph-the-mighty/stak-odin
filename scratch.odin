@@ -104,33 +104,42 @@ scratch :: proc() {
   //with_raw();
   //with_union();
 
-  B :: struct {
-    b: int
-  };
+  // B :: struct {
+  //   b: int
+  // };
 
-  C :: struct {
-    c: int
-  };
+  // C :: struct {
+  //   c: int
+  // };
 
-  A :: struct {
-    kind: union {
-      B,
-      C
-    }
-  };
+  // A :: struct {
+  //   kind: union {
+  //     B,
+  //     C
+  //   }
+  // };
 
-  a: A;
-  a.kind = B{b = 5};
-  a_ptr := &a;
+  // a: A;
+  // a.kind = B{b = 5};
+  // a_ptr := &a;
 
-  switch kind in &a_ptr.kind {
-    case C:
-      fmt.println("Case C!");
-      fmt.println(kind);
-    case B:
-      fmt.println("Case B!");
-      fmt.println(kind);
-    case:
-      fmt.println("Default!");
-  }
+  // switch kind in &a_ptr.kind {
+  //   case C:
+  //     fmt.println("Case C!");
+  //     fmt.println(kind);
+  //   case B:
+  //     fmt.println("Case B!");
+  //     fmt.println(kind);
+  //   case:
+  //     fmt.println("Default!");
+  // }
+
+
+  fmt.println(context.allocator);
+
+
+
+
+
 }
+

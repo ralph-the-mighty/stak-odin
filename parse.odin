@@ -51,27 +51,88 @@ TokenKind :: enum {
 	EOF,
 };
 
+@static
+token_to_string := map[TokenKind]string {
+  .NUMBER = "int",
+	.NAME = "name",
+	.MUL = "*",
+	.DIV = "/",
+	.MOD = "%",
+	.AND = "&",
+	.PLUS = "+",
+	.MINUS = "-",
+	.OR = "|",
+	.XOR = "^",
+	.LT = "<",
+	.GT = ">",
+	.LTE = "<=",
+	.GTE = ">=",
+	.EQ = "==",
+	.NEQ = "!=",
+	.OR_OR = "||",
+	.AND_AND = "&&",
+	.ASSIGN = "=",
+	.NOT = "!",
+	.BIT_NOT = "~",
+	.LPAREN = "(",
+	.RPAREN = ")",
+	.LBRACE = "[",
+	.RBRACE = "]",
+	.COMMA = ",",
+	.EOF = "EOF"
+};
+
 //lexing
+
+
+Loc :: struct {
+  line_number: uint,
+  column: uint,
+  filename: string
+}
+
 
 Token :: struct {
   kind: TokenKind,
   stringval: string,
-  intval: int
+  intval: int,
+  loc_start: Loc,
+  loc_end: Loc
 }
+
+
 
 
 
 Lexer :: struct {
-  index: int,
+  index: uint,
   stream: []byte,
   token: Token,
+
+  loc: Loc
 }
 
 
-init_lexer :: proc(l: ^Lexer, stream: []byte) {
+init_lexer :: proc(l: ^Lexer, stream: []byte, filename: string) {
   l.stream = stream;
+  l.loc = Loc{filename = filename, line_number = 1};
   l.index = 0;
   next_token(l);
+}
+
+advance :: proc(l: ^Lexer, amount: uint = 1) {
+  l.index += amount;
+  l.loc.column += amount;
+
+  if l.stream[l.index] == '\r' && l.stream[l.index + 1] == '\n' { //TODO(josh): generalize this, add tabs, etc
+    l.index += 2;
+    l.loc.column = 0;
+    l.loc.line_number += 1;
+  } else if l.stream[l.index] == '\n' {
+    l.index += 1;
+    l.loc.column = 0;
+    l.loc.line_number += 1;
+  }
 }
 
 
@@ -93,12 +154,14 @@ iswhitespace :: proc(character: byte) -> bool {
 
 scan_identifier :: proc(using l: ^Lexer)  {
     start := index;
+    token.loc_start = l.loc;
     //alphnum
     token.kind = .NAME;
     for isalnum(stream[index]) {
-      index += 1;
+      advance(l);
     }
     token.stringval = intern_string(string(stream[start:index]));
+    token.loc_end = l.loc;
 }
 
 
@@ -123,19 +186,20 @@ digit_table := map[byte]int{
 };
 
 scan_int :: proc(using l: ^Lexer) {
+  token.loc_start = l.loc;
   token.kind = .NUMBER;
 	val := 0;
 	base := 10;
 	if (stream[index] == '0') {
-		index += 1;
+		advance(l);
 		if (stream[index] == 'x' || stream[index] == 'X') {
 			//hexadecimal
 			base = 16;
-      index += 1;
+      advance(l);
 		} else if (stream[index] == 'b' || stream[index] == 'B') {
       //binary
 			base = 2;
-      index += 1;
+      advance(l);
 		}
 	}
 
@@ -143,29 +207,43 @@ scan_int :: proc(using l: ^Lexer) {
     digit, ok := digit_table[stream[index]];
     if !ok do break;
 		if (digit >= base) {
-			fmt.printf("malformed integer: expected base %d, but got digit %c", base, stream[index]);
+			parse_error_here(l, fmt.tprintf("malformed integer: found character %c while parsing integer of base %d", stream[index], base));
       os.exit(1);
 		}
 		val *= base;
 		val += digit;
-    index += 1;
+    advance(l);
 	}
 	token.intval = val;
+  token.loc_end = l.loc;
 }
 
 
-parse_error :: proc(l: ^Lexer, msg: string) {
-  fmt.println(msg);
+parse_error_here :: proc(l: ^Lexer, msg: string) {
+  parse_error(l, msg, l.loc);
+}
+
+
+parse_error :: proc(l: ^Lexer, msg: string, using loc: Loc) {
+  fmt.printf("%s(%d, %d): parse error: %s", filename, line_number, column, msg);
   os.exit(1);
 }
 
+
+
+set_token :: proc(l: ^Lexer, kind: TokenKind, length: uint = 1) {
+  l.token.kind = kind;
+  l.token.loc_start = l.loc;
+  advance(l, length);
+  l.token.loc_end = l.loc;
+}
 
 
 next_token :: proc(using l: ^Lexer) {
 
   //skip whitespace
   for iswhitespace(stream[index]) {
-    index += 1;
+    advance(l);
   }
 
   switch(stream[index]) {
@@ -177,91 +255,67 @@ next_token :: proc(using l: ^Lexer) {
       token.kind = .EOF;
       token.intval = 0;
     case '+':
-      token.kind = .PLUS;
-      index += 1;
+      set_token(l, .PLUS);
     case '-':
-      token.kind = .MINUS;
-      index += 1;
+      set_token(l, .MINUS);
     case '*':
-      token.kind = .MUL;
-      index += 1;
+      set_token(l, .MUL);
     case '/':
-      token.kind = .DIV;
-      index += 1;
+      set_token(l, .DIV);
     case '%':
-      token.kind = .MOD;
-      index += 1;
+      set_token(l, .MOD);
     case '^':
-      token.kind = .XOR;
-      index += 1;
+      set_token(l, .XOR);
     case '~':
-      token.kind = .BIT_NOT;
-      index += 1;
+      set_token(l, .BIT_NOT);
     case '(':
-      token.kind = .LPAREN;
-      index += 1;
+      set_token(l, .LPAREN);
     case ')':
-      token.kind = .RPAREN;
-      index += 1;
+      set_token(l, .RPAREN);
     case '{':
-      token.kind = .LBRACE;
-      index += 1;
+      set_token(l, .LBRACE);
     case '}':
-      token.kind = .RBRACE;
-      index += 1;
+      set_token(l, .RBRACE);
     case ',':
-      token.kind = .COMMA;
-      index += 1;
+      set_token(l, .COMMA);
     case '!':
       if stream[index + 1] == '=' {
-        token.kind = .NEQ;
-        index += 2;
+        set_token(l, .NEQ, 2);
       } else {
-        token.kind = .NOT;
-        index += 1;
+        set_token(l, .NOT, 2);
       }
     case '<':
       if stream[index + 1] == '=' {
-        token.kind = .LTE;
-        index += 2;
+        set_token(l, .LTE, 2);
       } else {
-        token.kind = .LT;
-        index += 1;
+        set_token(l, .LT);
       }
     case '>':
       if stream[index + 1] == '=' {
-        token.kind = .GTE;
-        index += 2;
+        set_token(l, .GTE, 2);
       } else {
-        token.kind = .GT;
-        index += 1;
+        set_token(l, .GT);
       }
     case '=':
       if stream[index + 1] == '=' {
-        token.kind = .EQ;
-        index += 2;
+        set_token(l, .EQ, 2);
       } else {
-        token.kind = .ASSIGN;
-        index += 1;
+        set_token(l, .ASSIGN);
       }
     case '&':
       if stream[index + 1] == '&' {
-        token.kind = .AND;
-        index += 2;
+        set_token(l, .AND_AND, 2);
       } else {
-        token.kind = .AND_AND;
-        index += 1;
+        set_token(l, .AND);
       }
     case '|':
       if stream[index + 1] == '|' {
-        token.kind = .OR_OR;
-        index += 2;
+        set_token(l, .OR_OR, 2);
       } else {
-        token.kind = .OR;
-        index += 1;
+        set_token(l, .OR);
       }
     case:
-      parse_error(l, "Illegal Token!");
+      parse_error_here(l, fmt.tprintf("Illegal Token: %c", stream[index]));
   }
 }
 
@@ -271,7 +325,10 @@ expect_token :: proc(l: ^Lexer, kind: TokenKind) {
   if(l.token.kind == kind) {
     next_token(l);
   } else {
-    parse_error(l, "Expected token of one type, but got a different type!");
+    parse_error(l, fmt.tprintf("Expected '%s', but found '%s'", 
+                                    token_to_string[kind], 
+                                    token_to_string[l.token.kind]),
+                                    l.token.loc_start);
   }
 }
 
@@ -293,7 +350,7 @@ parse_expr_val :: proc(l: ^Lexer) -> ^Expr {
     node = parse_expr(l);
     expect_token(l, .RPAREN);
   } else {
-    parse_error(l, "Only parsing number vals at the moment");
+    parse_error_here(l, "Only parsing number vals at the moment");
   }
   return node;
 }

@@ -33,6 +33,7 @@ main :: proc() {
   // test_lex(&lexer);
   // os.exit(0);
 
+  filename := "./test.stak";
   file_bytes, success := os.read_entire_file("./test.stak");
 
   if !success {
@@ -48,7 +49,7 @@ main :: proc() {
   source_stream[len(file_bytes)] = 0;
 
 
-  init_lexer(&lexer, source_stream);
+  init_lexer(&lexer, source_stream, filename);
   ast : ^Expr = parse_program(&lexer);
   print_expr(ast);
 

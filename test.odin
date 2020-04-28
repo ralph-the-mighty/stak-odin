@@ -54,7 +54,7 @@ test_lex :: proc(l: ^Lexer) {
   source_stream[len(file_bytes)] = 0;
 
 
-  init_lexer(l, source_stream);
+  init_lexer(l, source_stream, "./test1.stak");
   assert_string(l, "fun");
   assert_string(l, "factorial");
   assert_token(l, TokenKind.LPAREN);
