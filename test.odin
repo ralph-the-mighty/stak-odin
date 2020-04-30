@@ -5,21 +5,6 @@ import "core:fmt";
 import "core:strings";
 import "core:os";
 
-test :: proc() {
-  test_intern();
-}
-
-test_intern :: proc() {
-  intern_string("asdf");
-  intern_string("qwer");
-  intern_string("zxcv");
-
-  intern_string("asdf");
-  intern_string("zxcvasdfg");
-  intern_string("qwer");
-
-  fmt.print(interned);
-}
 
 
 assert_token :: proc(l: ^Lexer, kind: TokenKind) {
@@ -57,30 +42,32 @@ test_lex :: proc(l: ^Lexer) {
   init_lexer(l, source_stream, "./test1.stak");
   assert_string(l, "fun");
   assert_string(l, "factorial");
-  assert_token(l, TokenKind.LPAREN);
+  assert_token(l, .LPAREN);
   assert_string(l, "n");
-  assert_token(l, TokenKind.RPAREN);
-  assert_token(l, TokenKind.LBRACE);
+  assert_token(l, .RPAREN);
+  assert_token(l, .LBRACE);
   assert_string(l, "if");
-  assert_token(l, TokenKind.LPAREN);
+  assert_token(l, .LPAREN);
   assert_string(l, "n");
-  assert_token(l, TokenKind.LTE);
+  assert_token(l, .LTE);
   assert_num(l, 1);
-  assert_token(l, TokenKind.RPAREN);
-  assert_token(l, TokenKind.LBRACE);
+  assert_token(l, .SEMICOLON);
+  assert_token(l, .RPAREN);
+  assert_token(l, .LBRACE);
   assert_string(l, "return");
   assert_num(l, 1);
-  assert_token(l, TokenKind.RBRACE);
+  assert_token(l, .RBRACE);
   assert_string(l, "else");
-  assert_token(l, TokenKind.LBRACE);
+  assert_token(l, .LBRACE);
   assert_string(l, "return");
   assert_string(l, "factorial");
-  assert_token(l, TokenKind.LPAREN);
+  assert_token(l, .LPAREN);
   assert_string(l, "n");
-  assert_token(l, TokenKind.MINUS);
+  assert_token(l, .MINUS);
   assert_num(l, 1);
-  assert_token(l, TokenKind.RPAREN);
-  assert_token(l, TokenKind.RBRACE);
-  assert_token(l, TokenKind.RBRACE);
-  assert_token(l, TokenKind.EOF);
+  assert_token(l, .RPAREN);
+  assert_token(l, .SEMICOLON);
+  assert_token(l, .RBRACE);
+  assert_token(l, .RBRACE);
+  assert_token(l, .EOF);
 }

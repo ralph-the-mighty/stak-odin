@@ -45,8 +45,10 @@ StmtPrint :: struct {
   rhs: ^Expr
 }
 
-StmtDecl :: struct {
-  ident: string
+StmtIf :: struct {
+  condition: ^Expr,
+  if_body: ^StmtBlock,
+  else_body: ^StmtBlock
 }
 
 StmtAssign :: struct {
@@ -54,21 +56,41 @@ StmtAssign :: struct {
   rhs: ^Expr
 }
 
+StmtBlock :: struct {
+  stmts: [dynamic]^Stmt
+}
 
 
 Stmt :: struct {
   kind: union {
     StmtPrint,
-    StmtDecl,
-    StmtAssign
+    StmtAssign,
+    StmtBlock,
+  }
+}
+
+
+DeclFun :: struct {
+  name: string,
+  body: ^StmtBlock
+}
+
+
+DeclVar :: struct {
+  name: string,
+  initializer: ^Expr
+}
+
+
+Decl :: struct {
+  kind: union {
+    DeclFun,
+    DeclVar
   }
 }
 
 
 
-AstNode :: struct {
-  kind: union {
-    Expr,
-    Stmt
-  }
+Ast :: struct {
+  decls: [dynamic]^Decl
 }

@@ -6,6 +6,12 @@ import "core:os";
 
 TokenKind :: enum {
   NUMBER,
+  //keyword tokens
+  VAR,
+  IF,
+  WHILE,
+  FUN,
+  PRINT,
 	NAME,
 
 	//mul associativity
@@ -46,8 +52,10 @@ TokenKind :: enum {
 	RPAREN,
 	LBRACE,
 	RBRACE,
-	COMMA,
-	
+  LBRACKET,
+  RBRACKET,
+	COMMA,	
+  SEMICOLON,
 	EOF,
 };
 
@@ -55,6 +63,11 @@ TokenKind :: enum {
 token_to_string := map[TokenKind]string {
   .NUMBER = "int",
 	.NAME = "name",
+  .WHILE = "while",
+  .PRINT = "print",
+  .VAR = "var",
+  .IF = "if",
+  .FUN = "fun",
 	.MUL = "*",
 	.DIV = "/",
 	.MOD = "%",
@@ -76,9 +89,12 @@ token_to_string := map[TokenKind]string {
 	.BIT_NOT = "~",
 	.LPAREN = "(",
 	.RPAREN = ")",
-	.LBRACE = "[",
-	.RBRACE = "]",
+	.LBRACE = "{",
+	.RBRACE = "}",
+  .LBRACKET = "[",
+  .RBRACKET = "]",
 	.COMMA = ",",
+  .SEMICOLON = ";",
 	.EOF = "EOF"
 };
 
@@ -151,16 +167,31 @@ iswhitespace :: proc(character: byte) -> bool {
   return false;
 }
 
+@static
+name_to_kind := map[string]TokenKind {
+  "while" = .WHILE,
+  "if" = .IF,
+  "var" = .VAR,
+  "fun" = .FUN,
+  "print" = .PRINT
+};
+
 
 scan_identifier :: proc(using l: ^Lexer)  {
     start := index;
     token.loc_start = l.loc;
     //alphnum
-    token.kind = .NAME;
     for isalnum(stream[index]) {
       advance(l);
     }
-    token.stringval = intern_string(string(stream[start:index]));
+    name := string(stream[start:index]);
+    kind, ok := name_to_kind[name];
+    if ok {
+      token.kind = kind;
+    } else {
+      token.kind = .NAME;
+    }
+    token.stringval = name;
     token.loc_end = l.loc;
 }
 
@@ -225,7 +256,7 @@ parse_error_here :: proc(l: ^Lexer, msg: string) {
 
 
 parse_error :: proc(l: ^Lexer, msg: string, using loc: Loc) {
-  fmt.printf("%s(%d, %d): parse error: %s", filename, line_number, column, msg);
+  fmt.printf("%s(%d, %d): Parse Error: %s", filename, line_number, column, msg);
   os.exit(1);
 }
 
@@ -278,6 +309,8 @@ next_token :: proc(using l: ^Lexer) {
       set_token(l, .RBRACE);
     case ',':
       set_token(l, .COMMA);
+    case ';':
+      set_token(l, .SEMICOLON);
     case '!':
       if stream[index + 1] == '=' {
         set_token(l, .NEQ, 2);
@@ -317,12 +350,18 @@ next_token :: proc(using l: ^Lexer) {
     case:
       parse_error_here(l, fmt.tprintf("Illegal Token: %c", stream[index]));
   }
+  // fmt.printf("(%d:%d): token: %s\n", 
+  //   l.token.loc_start.line_number, 
+  //   l.token.loc_start.column, 
+  //   token_to_string[l.token.kind]);
 }
 
 
 
-expect_token :: proc(l: ^Lexer, kind: TokenKind) {
+expect_token :: proc(l: ^Lexer, kind: TokenKind) -> Token {
+  t: Token;
   if(l.token.kind == kind) {
+    t := l.token;
     next_token(l);
   } else {
     parse_error(l, fmt.tprintf("Expected '%s', but found '%s'", 
@@ -330,6 +369,15 @@ expect_token :: proc(l: ^Lexer, kind: TokenKind) {
                                     token_to_string[l.token.kind]),
                                     l.token.loc_start);
   }
+  return t;
+}
+
+match_token :: proc(l: ^Lexer, kind: TokenKind) -> bool {
+  if l.token.kind == kind {
+    next_token(l);
+    return true;
+  }
+  return false;
 }
 
 
@@ -345,12 +393,12 @@ parse_expr_val :: proc(l: ^Lexer) -> ^Expr {
   if l.token.kind == .NUMBER {
     node.kind = ExprNumber{val = l.token.intval};
     next_token(l);
-  } else if l.token.kind == .LPAREN {
-    next_token(l);
+  } else if match_token(l, .LPAREN) {
     node = parse_expr(l);
     expect_token(l, .RPAREN);
   } else {
-    parse_error_here(l, "Only parsing number vals at the moment");
+    parse_error_here(l,
+      fmt.tprintf("trying to expression value (only numbers allowed atm) and found '%s' token", token_to_string[l.token.kind]));
   }
   return node;
 }
@@ -363,8 +411,7 @@ parse_expr_mul :: proc(l: ^Lexer) -> ^Expr {
   for l.token.kind == .MUL || l.token.kind == .DIV {
     lhs := expr;
     op : Operator;
-    if(l.token.kind == .MUL) {
-      next_token(l);
+    if match_token(l, .MUL) {
       op = .MUL;
     } else {
       assert(l.token.kind == .DIV);
@@ -387,8 +434,7 @@ parse_expr_plus :: proc(l: ^Lexer) -> ^Expr {
     lhs := expr;
     op : Operator;
 
-    if(l.token.kind == .PLUS) {
-      next_token(l);
+    if match_token(l, .PLUS) {
       op = .PLUS;
     } else {
       assert(l.token.kind == .MINUS);
@@ -408,18 +454,93 @@ parse_expr :: proc(l: ^Lexer) -> ^Expr {
 }
 
 
-parse_program :: proc(l: ^Lexer) -> ^Expr {
-  expr := parse_expr(l);
+parse_stmt :: proc(l: ^Lexer) -> ^Stmt {
+  stmt := new(Stmt);
+  if match_token(l, .PRINT) {
+    stmt.kind = StmtPrint{rhs = parse_expr(l)};
+  } else if match_token(l, .IF) {
+    panic("Not Implemented");
+  }
+  expect_token(l, .SEMICOLON);
+  return stmt;
+}
+
+
+parse_block :: proc(l: ^Lexer) -> ^StmtBlock {
+  block := new(StmtBlock);
+  for l.token.kind != .RBRACE && l.token.kind != .EOF {
+    append_elem(&block.stmts, parse_stmt(l));
+  }
+  return block;
+}
+
+
+parse_decl_var :: proc(l: ^Lexer) -> ^Decl {
+  decl := new(Decl);
+  name := expect_token(l, .NAME).stringval;
+
+  initializer: ^Expr;
+  if(match_token(l, .ASSIGN)) {
+    initializer = parse_expr(l);
+  }
+  expect_token(l, .SEMICOLON);
+  decl.kind = DeclVar{name, initializer};
+  return decl;
+}
+
+parse_decl_fun ::proc(l: ^Lexer) -> ^Decl {
+  decl := new(Decl);
+  name := expect_token(l, .NAME).stringval;
+  expect_token(l, .LPAREN);
+  expect_token(l, .RPAREN);
+
+  
+  body: ^StmtBlock;
+  if(match_token(l, .LBRACE)) {
+    body = parse_block(l);
+    expect_token(l, .RBRACE);
+  }
+  decl.kind = DeclFun{name, body};
+  return decl;
+}
+
+
+parse_decl :: proc(l: ^Lexer) -> ^Decl {
+  decl: ^Decl;
+  if(match_token(l, .VAR)) {
+    decl = parse_decl_var(l);
+  } else if(match_token(l, .FUN)) {
+    decl = parse_decl_fun(l);
+  } else {
+    parse_error(l, "Only global variables and function declarations are allowed at the top level", l.token.loc_start);
+  }
+  return decl;
+}
+
+
+parse_program :: proc(l: ^Lexer) -> ^Ast {
+  ast := new(Ast);
+  for l.token.kind != .EOF {
+    append_elem(&ast.decls, parse_decl(l));
+  }
   expect_token(l, TokenKind.EOF);
-  return expr;
+  return ast;
 }
 
 
 
 
 
-print_stmt :: proc(node: ^Stmt) {
-  panic("Not Implemented!");
+print_stmt :: proc(stmt: ^Stmt) {
+  switch kind in stmt.kind {
+    case StmtPrint:
+      fmt.print("(print ");
+      print_expr(kind.rhs);
+      fmt.print(")");
+    case:
+      panic("Not Implemented!");
+  }
+  fmt.println("");
 }
 
 
@@ -449,14 +570,13 @@ print_expr :: proc(node: ^Expr) {
   }
 }
 
+print_decl :: proc(decl: ^Decl) {
+  panic("Not Implemented");
+}
 
-print_node :: proc(node: ^AstNode) {
-  switch kind in &node.kind {
-    case Expr:
-      print_expr(kind);
-    case Stmt:
-      print_stmt(kind);
-    case:
-      panic("Not Implemented!");
+
+print_ast :: proc(ast: ^Ast) {
+  for decl in ast.decls {
+    print_decl(decl);
   }
 }

@@ -135,7 +135,22 @@ scratch :: proc() {
   // }
 
 
-  fmt.println(context.allocator);
+  //fmt.println(context.allocator);
+
+
+
+  
+  ints: [dynamic]int;
+
+  for i in 0..10 {
+    append(&ints, i);
+  }
+
+  fmt.println(ints);
+
+  for i in ints {
+    fmt.println(i);
+  }
 
 
 

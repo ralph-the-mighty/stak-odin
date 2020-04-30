@@ -6,23 +6,6 @@ import "core:os";
 import "core:mem";
 
 
-//string interning
-interned : [dynamic]string;
-
-
-intern_string :: proc(s: string) -> string {
-  for it in interned {
-    if len(it) == len(s) && strings.compare(it, s) == 0 {
-      return it;
-    }
-  }
-  cloned := strings.clone(s);
-  append(&interned, cloned);
-  return cloned;
-}
-
-
-
 lexer: Lexer;
 
 main :: proc() {
@@ -50,8 +33,9 @@ main :: proc() {
 
 
   init_lexer(&lexer, source_stream, filename);
-  ast : ^Expr = parse_program(&lexer);
-  print_expr(ast);
+  ast : ^Ast = parse_program(&lexer);
+  //print_ast(ast);
+  //fmt.printf("\nEvaluates to: %d\n", evalexpr(ast));
 
 
 }
