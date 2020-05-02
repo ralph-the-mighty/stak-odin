@@ -14,7 +14,7 @@ indent_line :: proc(b: ^strings.Builder, depth: int) {
 
 
 print_stmt :: proc(b: ^strings.Builder, stmt: ^Stmt) {
-  switch kind in stmt.kind {
+  #partial switch kind in stmt.kind {
     case StmtPrint:
       fmt.sbprint(b, "(print ");
       print_expr(b, kind.rhs);
@@ -36,7 +36,7 @@ operator_to_string := map[Operator]string{
 };
 
 print_expr :: proc(b: ^strings.Builder, node: ^Expr) {
-  switch kind in node.kind {
+  #partial switch kind in node.kind {
     case ExprBinary:
       fmt.sbprint(b, "(");
       fmt.sbprintf(b, "%s ", operator_to_string[kind.op]);
@@ -61,7 +61,7 @@ print_block :: proc(b: ^strings.Builder, block: ^StmtBlock, depth := 0) {
 }
 
 print_decl :: proc(b: ^strings.Builder, decl: ^Decl) {
-  switch kind in decl.kind {
+  #partial switch kind in decl.kind {
     case DeclFun:
       fmt.sbprintf(b, "(define (%s)\n", kind.name);
       print_block(b, kind.body, 1);

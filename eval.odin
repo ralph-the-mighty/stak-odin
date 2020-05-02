@@ -3,7 +3,7 @@ package main
 
 evalexpr :: proc(expr: ^Expr) -> int {
   val: int;
-  switch kind in expr.kind {
+  #partial switch kind in expr.kind{
     case ExprNumber: val = kind.val;
     case ExprBinary:
       switch kind.op {
