@@ -66,6 +66,7 @@ Stmt :: struct {
     StmtPrint,
     StmtAssign,
     StmtBlock,
+    StmtIf
   }
 }
 

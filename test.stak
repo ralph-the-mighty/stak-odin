@@ -4,4 +4,9 @@ fun main () {
   print 3;
   print 9;
   print 102;
+  if 0 + 4 {
+    print 3;
+  } else {
+    print 9;
+  }
 }

@@ -9,6 +9,7 @@ TokenKind :: enum {
   //keyword tokens
   VAR,
   IF,
+  ELSE,
   WHILE,
   FUN,
   PRINT,
@@ -67,6 +68,7 @@ token_to_string := map[TokenKind]string {
   .PRINT = "print",
   .VAR = "var",
   .IF = "if",
+  .ELSE = "else",
   .FUN = "fun",
 	.MUL = "*",
 	.DIV = "/",
@@ -171,6 +173,7 @@ iswhitespace :: proc(character: byte) -> bool {
 name_to_kind := map[string]TokenKind {
   "while" = .WHILE,
   "if" = .IF,
+  "else" = .ELSE,
   "var" = .VAR,
   "fun" = .FUN,
   "print" = .PRINT
@@ -457,11 +460,25 @@ parse_expr :: proc(l: ^Lexer) -> ^Expr {
 parse_stmt :: proc(l: ^Lexer) -> ^Stmt {
   stmt := new(Stmt);
   if match_token(l, .PRINT) {
-    stmt.kind = StmtPrint{rhs = parse_expr(l)};
+    stmt.kind = StmtPrint{rhs = parse_expr(l)}; 
+    expect_token(l, .SEMICOLON);
   } else if match_token(l, .IF) {
-    panic("Not Implemented");
+    cond := parse_expr(l);
+    
+    expect_token(l, .LBRACE);
+    if_body := parse_block(l);
+    expect_token(l, .RBRACE);
+
+    else_body: ^StmtBlock;
+    if(match_token(l, .ELSE)) {
+      expect_token(l, .LBRACE);
+      else_body = parse_block(l);
+      expect_token(l, .RBRACE);
+    }
+    stmt.kind = StmtIf{cond, if_body, else_body};
+  } else {
+    panic("Not Implemented!");
   }
-  expect_token(l, .SEMICOLON);
   return stmt;
 }
 

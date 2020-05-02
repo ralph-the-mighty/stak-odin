@@ -7,18 +7,31 @@ import "core:fmt";
 
 
 indent_line :: proc(b: ^strings.Builder, depth: int) {
-  for _ in 0..(depth * 2) {
+  for _ in 0..<(depth*2) {
     strings.write_byte(b, ' ');
   }
 }
 
 
-print_stmt :: proc(b: ^strings.Builder, stmt: ^Stmt) {
+print_stmt :: proc(b: ^strings.Builder, stmt: ^Stmt, depth: int) {
+  indent_line(b, depth);
   #partial switch kind in stmt.kind {
     case StmtPrint:
-      fmt.sbprint(b, "(print ");
+      fmt.sbprint(b, "print ");
       print_expr(b, kind.rhs);
-      fmt.sbprint(b, ")");
+    case StmtIf:
+      fmt.sbprint(b, "if ");
+      print_expr(b, kind.condition);
+      fmt.sbprint(b, " {\n");
+      print_block(b, kind.if_body, depth);
+      indent_line(b, depth);
+      fmt.sbprint(b, "}");
+      if(kind.else_body != nil) {
+        fmt.sbprint(b, " else {\n");
+        print_block(b, kind.if_body, depth);
+        indent_line(b, depth);
+        fmt.sbprint(b, "}");
+      }
     case:
       panic("Not Implemented!");
   }
@@ -54,18 +67,18 @@ print_expr :: proc(b: ^strings.Builder, node: ^Expr) {
 
 print_block :: proc(b: ^strings.Builder, block: ^StmtBlock, depth := 0) {
   for stmt in block.stmts {
-    indent_line(b, depth);
-    print_stmt(b, stmt);
+    print_stmt(b, stmt, depth + 1);
   }
-  
 }
+
 
 print_decl :: proc(b: ^strings.Builder, decl: ^Decl) {
   #partial switch kind in decl.kind {
     case DeclFun:
-      fmt.sbprintf(b, "(define (%s)\n", kind.name);
-      print_block(b, kind.body, 1);
-      fmt.sbprint(b, ")\n");
+      fmt.sbprintf(b, "fun %s ()", kind.name);
+      fmt.sbprint(b, " {\n");
+      print_block(b, kind.body);
+      fmt.sbprint(b, "}\n");
     case:
       panic("Not implemented!");
   }
