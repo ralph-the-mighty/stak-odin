@@ -140,21 +140,38 @@ scratch :: proc() {
 
 
   
-  ints: [dynamic]int;
+  // ints: [dynamic]int;
 
-  for i in 0..10 {
-    append(&ints, i);
-  }
+  // for i in 0..10 {
+  //   append(&ints, i);
+  // }
 
-  fmt.println(ints);
+  // fmt.println(ints);
 
-  for i in ints {
-    fmt.println(i);
-  }
-
-
+  // for i in ints {
+  //   fmt.println(i);
+  // }
 
 
+  A :: struct {
+    a: int
+  }; 
+
+  B :: struct {
+    b: int
+  };
+
+
+  C :: union {
+    A,
+    B
+  };
+
+
+  
+  c: C;
+  c = A{a=1};
+  fmt.println(c);
 
 }
 

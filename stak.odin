@@ -10,8 +10,8 @@ lexer: Lexer;
 
 main :: proc() {
 
-  // scratch();
-  // os.exit(1);
+  scratch();
+  os.exit(1);
 
   // test_lex(&lexer);
   // os.exit(0);
