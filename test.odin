@@ -1,8 +1,7 @@
 package main;
 
-import "core:mem";
+//import "core:mem";
 import "core:fmt";
-import "core:strings";
 import "core:os";
 
 

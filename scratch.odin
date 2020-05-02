@@ -153,25 +153,37 @@ scratch :: proc() {
   // }
 
 
-  A :: struct {
-    a: int
-  }; 
+  // A :: struct {
+  //   a: int
+  // }; 
 
-  B :: struct {
-    b: int
-  };
-
-
-  C :: union {
-    A,
-    B
-  };
+  // B :: struct {
+  //   b: int
+  // };
 
 
-  
-  c: C;
-  c = A{a=1};
-  fmt.println(c);
+  // C :: union {
+  //   A,
+  //   B
+  // };
+
+
+
+  // c: C;
+  // c = A{a=1};
+  // fmt.println(c);
+
+
+  // x: int;
+  // {
+  //   x := 3;
+  //   fmt.printf("new x: %d\n", x);
+  // }
+  // fmt.printf("old x: %d\n", x);
+
+
+  fmt.printf("%*s%s\n", 10, "", "Hello, world!");
+
 
 }
 

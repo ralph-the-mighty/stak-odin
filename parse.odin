@@ -1,6 +1,6 @@
 package main;
-import "core:fmt";
 import "core:os";
+import "core:fmt";
 
 
 
@@ -361,7 +361,7 @@ next_token :: proc(using l: ^Lexer) {
 expect_token :: proc(l: ^Lexer, kind: TokenKind) -> Token {
   t: Token;
   if(l.token.kind == kind) {
-    t := l.token;
+    t = l.token;
     next_token(l);
   } else {
     parse_error(l, fmt.tprintf("Expected '%s', but found '%s'", 
@@ -525,58 +525,4 @@ parse_program :: proc(l: ^Lexer) -> ^Ast {
   }
   expect_token(l, TokenKind.EOF);
   return ast;
-}
-
-
-
-
-
-print_stmt :: proc(stmt: ^Stmt) {
-  switch kind in stmt.kind {
-    case StmtPrint:
-      fmt.print("(print ");
-      print_expr(kind.rhs);
-      fmt.print(")");
-    case:
-      panic("Not Implemented!");
-  }
-  fmt.println("");
-}
-
-
-
-@static
-operator_to_string := map[Operator]string{
-  .PLUS = "+",
-  .MINUS = "-",
-  .MUL = "*",
-  .DIV = "/"
-};
-
-print_expr :: proc(node: ^Expr) {
-  switch kind in node.kind {
-    case ExprBinary:
-      fmt.print("(");
-      fmt.printf("%s ", operator_to_string[kind.op]);
-      print_expr(kind.lhs);
-      fmt.print(" ");
-      print_expr(kind.rhs);
-      fmt.print(")");
-    case ExprNumber:
-      fmt.print(kind.val);
-    case:
-      fmt.println(node);
-      panic("Not implemented!");
-  }
-}
-
-print_decl :: proc(decl: ^Decl) {
-  panic("Not Implemented");
-}
-
-
-print_ast :: proc(ast: ^Ast) {
-  for decl in ast.decls {
-    print_decl(decl);
-  }
 }
