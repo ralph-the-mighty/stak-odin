@@ -45,7 +45,18 @@ operator_to_string := map[Operator]string{
   .PLUS = "+",
   .MINUS = "-",
   .MUL = "*",
-  .DIV = "/"
+  .DIV = "/",
+  .LT = "<",
+  .LTE = "<=",
+  .GT = ">",
+  .GTE = ">=",
+  .EQ = "=",
+  .OR_OR = "||",
+  .AND_AND = "&&",
+  .EQ = "==",
+  .NEQ = "!=",
+  .AND = "&",
+  .OR = "|",
 };
 
 print_expr :: proc(b: ^strings.Builder, node: ^Expr) {

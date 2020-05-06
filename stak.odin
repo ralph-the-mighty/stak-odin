@@ -38,7 +38,6 @@ main :: proc() {
   defer strings.destroy_builder(&sb);
   print_ast(&sb, ast);
   fmt.print(strings.to_string(sb));
-  //fmt.printf("\nEvaluates to: %d\n", evalexpr(ast));
 
 
 }

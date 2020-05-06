@@ -6,7 +6,7 @@ evalexpr :: proc(expr: ^Expr) -> int {
   #partial switch kind in expr.kind{
     case ExprNumber: val = kind.val;
     case ExprBinary:
-      switch kind.op {
+      #partial switch kind.op {
         case .PLUS:  val = evalexpr(kind.lhs) + evalexpr(kind.rhs);
         case .MINUS: val = evalexpr(kind.lhs) - evalexpr(kind.rhs);
         case .MUL:   val = evalexpr(kind.lhs) * evalexpr(kind.rhs);

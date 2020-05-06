@@ -5,7 +5,22 @@ Operator :: enum {
   PLUS,
   MINUS,
   MUL,
-  DIV
+  DIV,
+  LT,
+  LTE,
+  GT,
+  GTE,
+  EQ,
+  NEQ,
+  AND_AND,
+  MOD,
+  AND,
+  OR,
+  XOR,
+  OR_OR,
+  NOT,
+  BIT_NOT
+
 }
 
 
