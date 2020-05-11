@@ -20,7 +20,6 @@ Operator :: enum {
   OR_OR,
   NOT,
   BIT_NOT
-
 }
 
 

@@ -16,35 +16,30 @@ TokenKind :: enum {
 	NAME,
 
 	//mul associativity
-	FIRST_MUL,
-	MUL = FIRST_MUL,
+  FIRST_BINARY_OP,
+	MUL = FIRST_BINARY_OP,
 	DIV,
 	MOD,
 	AND,
-	LAST_MUL = AND,
-
-
 	//add associativity
-	FIRST_ADD,
-	PLUS = FIRST_ADD,
+	PLUS,
 	MINUS,
 	OR,
 	XOR,
-	LAST_ADD = XOR,
-
 	//cmp associativity
-	FIRST_CMP,
 	LT,
 	GT,
 	LTE,
 	GTE,
   EQ,
   NEQ,
-  LAST_CMP = NEQ,
 
 	OR_OR,
 	AND_AND,
-	ASSIGN,
+  LAST_BINARY_OP = AND_AND,
+	
+  
+  ASSIGN,
 	NOT,
 	BIT_NOT,
 
@@ -402,17 +397,6 @@ parse_expr_val :: proc(l: ^Lexer) -> ^Expr {
   return node;
 }
 
-is_token_mul :: proc(kind: TokenKind) -> bool {
-  return kind >= .FIRST_MUL && kind <= .LAST_MUL;
-}
-
-is_token_add :: proc(kind: TokenKind) -> bool {
-  return kind >= .FIRST_ADD && kind <= .LAST_ADD;
-}
-
-is_token_cmp :: proc(kind: TokenKind) -> bool {
-  return kind >= .FIRST_CMP && kind <= .LAST_CMP;
-}
 
 @static
 token_to_op := map[TokenKind]Operator{
@@ -437,14 +421,43 @@ token_to_op := map[TokenKind]Operator{
 };
 
 
+@static
+precedence_table := map[TokenKind]int{
+  
+  .MUL     = 5,
+  .DIV     = 5,
+  .AND     = 5,
+  .MOD     = 5,
+  
+  .PLUS    = 4,
+  .MINUS   = 4,
+  .OR      = 4,
+  .XOR     = 4,
 
-parse_expr_mul :: proc(l: ^Lexer) -> ^Expr {
+  .LT      = 3,
+  .LTE     = 3,
+  .GT      = 3,
+  .GTE     = 3,
+  .EQ      = 3,
+  .NEQ     = 3,
+  .AND_AND = 2,
+  .OR_OR   = 1
+};
+
+
+is_binary_op :: proc(kind: TokenKind) -> bool {
+  return kind >= .FIRST_BINARY_OP && kind <= .LAST_BINARY_OP;
+}
+
+
+parse_expr :: proc(l: ^Lexer, precedence := -999) -> ^Expr {
   expr := parse_expr_val(l);
-  for is_token_mul(l.token.kind) {
+  for is_binary_op(l.token.kind) && (precedence_table[l.token.kind] >= precedence) {
+    prec := precedence_table[l.token.kind];
     lhs := expr;
     op := token_to_op[l.token.kind];
     next_token(l);
-    rhs := parse_expr_val(l);
+    rhs := parse_expr(l, prec);
     expr = new(Expr);
     expr.kind = ExprBinary{op, lhs, rhs};
   }
@@ -452,60 +465,6 @@ parse_expr_mul :: proc(l: ^Lexer) -> ^Expr {
 }
 
 
-parse_expr_plus :: proc(l: ^Lexer) -> ^Expr {
-  expr := parse_expr_mul(l);
-  for is_token_add(l.token.kind) {
-    lhs := expr;
-    op := token_to_op[l.token.kind];
-    next_token(l);
-    rhs := parse_expr_mul(l);
-    expr = new(Expr);
-    expr.kind = ExprBinary{op, lhs, rhs};
-  }
-  return expr;
-}
-
-parse_expr_cmp :: proc(l: ^Lexer) -> ^Expr {
-  expr := parse_expr_plus(l);
-  for is_token_cmp(l.token.kind) {
-    lhs := expr;
-    op := token_to_op[l.token.kind];
-    next_token(l);
-    rhs := parse_expr_plus(l);
-    expr = new(Expr);
-    expr.kind = ExprBinary{op, lhs, rhs};
-  }
-  return expr;
-}
-
-
-parse_expr_and :: proc(l: ^Lexer) -> ^Expr {
-  expr := parse_expr_cmp(l);
-  for match_token(l, .AND_AND) {
-    lhs := expr;
-    rhs := parse_expr_cmp(l);
-    expr = new(Expr);
-    expr.kind = ExprBinary{.AND_AND, lhs, rhs};
-  }
-  return expr;
-}
-
-
-parse_expr_or :: proc(l: ^Lexer) -> ^Expr {
-  expr := parse_expr_and(l);
-  for match_token(l, .OR_OR) {
-    lhs := expr;
-    rhs := parse_expr_and(l);
-    expr = new(Expr);
-    expr.kind = ExprBinary{.OR_OR, lhs, rhs};
-  }
-  return expr;
-}
-
-
-parse_expr :: proc(l: ^Lexer) -> ^Expr {
-  return parse_expr_or(l);
-}
 
 
 parse_stmt :: proc(l: ^Lexer) -> ^Stmt {
