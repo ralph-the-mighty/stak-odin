@@ -392,7 +392,7 @@ parse_expr_val :: proc(l: ^Lexer) -> ^Expr {
     expect_token(l, .RPAREN);
   } else {
     parse_error_here(l,
-      fmt.tprintf("trying to expression value (only numbers allowed atm) and found '%s' token", token_to_string[l.token.kind]));
+      fmt.tprintf("trying to parse expression value (only numbers allowed atm) and found '%s' token", token_to_string[l.token.kind]));
   }
   return node;
 }
