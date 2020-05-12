@@ -397,6 +397,19 @@ parse_expr_val :: proc(l: ^Lexer) -> ^Expr {
   return node;
 }
 
+parse_expr_unary :: proc(l: ^Lexer) -> ^Expr {
+  expr: ^Expr;
+  if(l.token.kind == .PLUS || l.token.kind == .MINUS) {
+    expr = new(Expr);
+    op := token_to_op[l.token.kind];
+    next_token(l);
+    expr.kind = ExprUnary{op, parse_expr_unary(l)};
+  } else {
+    expr = parse_expr_val(l);
+  }
+  return expr;
+}
+
 
 @static
 token_to_op := map[TokenKind]Operator{
@@ -450,20 +463,24 @@ is_binary_op :: proc(kind: TokenKind) -> bool {
 }
 
 
-parse_expr :: proc(l: ^Lexer, precedence := -999) -> ^Expr {
-  expr := parse_expr_val(l);
+parse_expr_binary :: proc(l: ^Lexer, precedence := -999) -> ^Expr {
+  expr := parse_expr_unary(l);
   for is_binary_op(l.token.kind) && (precedence_table[l.token.kind] >= precedence) {
     prec := precedence_table[l.token.kind];
     lhs := expr;
     op := token_to_op[l.token.kind];
     next_token(l);
-    rhs := parse_expr(l, prec);
+    rhs := parse_expr_binary(l, prec);
     expr = new(Expr);
     expr.kind = ExprBinary{op, lhs, rhs};
   }
   return expr;
 }
 
+
+parse_expr :: proc(l: ^Lexer) -> ^Expr {
+  return parse_expr_binary(l);
+}
 
 
 

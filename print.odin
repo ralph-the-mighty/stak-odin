@@ -28,7 +28,7 @@ print_stmt :: proc(b: ^strings.Builder, stmt: ^Stmt, depth: int) {
       fmt.sbprint(b, "}");
       if(kind.else_body != nil) {
         fmt.sbprint(b, " else {\n");
-        print_block(b, kind.if_body, depth);
+        print_block(b, kind.else_body, depth);
         indent_line(b, depth);
         fmt.sbprint(b, "}");
       }
@@ -62,11 +62,14 @@ operator_to_string := map[Operator]string{
 print_expr :: proc(b: ^strings.Builder, node: ^Expr) {
   #partial switch kind in node.kind {
     case ExprBinary:
-      fmt.sbprint(b, "(");
-      fmt.sbprintf(b, "%s ", operator_to_string[kind.op]);
+      fmt.sbprintf(b, "(%s ", operator_to_string[kind.op]);
       print_expr(b, kind.lhs);
       fmt.sbprint(b, " ");
       print_expr(b, kind.rhs);
+      fmt.sbprint(b, ")");
+    case ExprUnary:
+      fmt.sbprintf(b, "(%s ", operator_to_string[kind.op]);
+      print_expr(b, kind.child);
       fmt.sbprint(b, ")");
     case ExprNumber:
       fmt.sbprint(b, kind.val);
