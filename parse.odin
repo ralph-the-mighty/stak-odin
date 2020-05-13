@@ -174,6 +174,34 @@ name_to_kind := map[string]TokenKind {
   "print" = .PRINT
 };
 
+/*
+parse_error :: proc(l: ^Lexer, msg: string, using loc: Loc) {
+  fmt.printf("%s(%d, %d): Parse Error: %s", filename, line_number, column, msg);
+  os.exit(1);
+}
+
+ */
+
+scan_comment :: proc(using l: ^Lexer) {
+  comment_start := l.loc;
+  for {
+    if stream[index] == '*' && stream[index + 1] == '/' {
+      advance(l);
+      advance(l);
+      break;
+    } else if stream[index] == '/' && stream[index + 1] == '*' {
+      advance(l);
+      advance(l);
+      scan_comment(l);
+    } else if stream[index] == 0 {
+      parse_error_here(l, fmt.tprintf("Comment starting at (%d, %d) is not terminated", comment_start.line_number, comment_start.column));
+    } else {
+      advance(l);
+    }
+  }
+}
+
+
 
 scan_identifier :: proc(using l: ^Lexer)  {
     start := index;
@@ -290,7 +318,22 @@ next_token :: proc(using l: ^Lexer) {
     case '*':
       set_token(l, .MUL);
     case '/':
-      set_token(l, .DIV);
+      if stream[index + 1] == '/' {
+        advance(l);
+        //line comment
+        comment_line := lexer.loc.line_number;
+        for lexer.loc.line_number == comment_line && stream[index] != 0 {
+          advance(l);
+        }
+        next_token(l);
+      } else if stream[index + 1] == '*' {
+        //block comment
+        advance(l);
+        scan_comment(l);
+        next_token(l);
+      } else {
+        set_token(l, .DIV);
+      }
     case '%':
       set_token(l, .MOD);
     case '^':
